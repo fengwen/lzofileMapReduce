@@ -150,7 +150,6 @@ public class EtlJob extends Configured implements Tool {
 	 */
 	private String getInputMapFileInfo(List<CheckFileBean> lcheckFile) {
 		StringBuilder sb = new StringBuilder();
-
 		if (interType.toUpperCase().equals("ALL")) {
 			Comparator<CheckFileBean> cmp = new ComparatorCheckFileBean();
 			Collections.sort(lcheckFile, cmp);
@@ -247,6 +246,37 @@ public class EtlJob extends Configured implements Tool {
 			}
 		}
 	}
+	
+	@SuppressWarnings("static-access")
+	private boolean checkInFiles(String inFiles,Configuration conf){
+		boolean flag=true;
+		FileSystem fs = null;
+		try {
+			String fileList[]=inFiles.split(",");
+			Path in=new Path(inPath);
+			fs=in.getFileSystem(conf);
+			for(String f : fileList){
+				Path fp = new Path(f);
+				if(!fs.exists(fp)){
+					flag=false;
+					log.error(f +" 不存在，请检查");
+					break;
+				}
+			}
+		} catch (IOException e) {
+			flag=false;
+			e.printStackTrace();
+		} finally {
+			if (fs != null) {
+				try {
+					fs.closeAll();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}			
+		return flag;
+	}
 
 	@Override
 	public int run(String[] args) throws Exception {
@@ -280,6 +310,10 @@ public class EtlJob extends Configured implements Tool {
 		String inFiles = getInputMapFileInfo(lcheckFile);
 		if (inFiles.trim().length() == 0) {
 			log.error("需要进行通过Map清洗的文件列表为空，请检查输入参数及输入路径");
+			return -1;
+		}
+		if(!checkInFiles(inFiles,conf)){
+			log.error("需要进行Map清洗的文件列表部分文件不存在,退出，请检查！");
 			return -1;
 		}
 		log.info("需要进行通过Map清洗的文件列表:\n " + inFiles);
