@@ -289,12 +289,13 @@ public class EtlJob extends Configured implements Tool {
 		job.setJarByClass(EtlJob.class);
 		job.setJobName("etl4lzofile"); // 设置一个用户定义的job名称
 		log.warn("filestartwith:" + filestartwith);
+
 		MultipleOutputs.addNamedOutput(job, filestartwith, TextOutputFormat.class, Text.class, Text.class);
 		MultipleOutputs.setCountersEnabled(job, true);
 
 		job.setInputFormatClass(LzoTextInputFormat.class);
 		job.setMapperClass(MapClass.class);
-
+		
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(NullWritable.class);
 
@@ -321,6 +322,8 @@ public class EtlJob extends Configured implements Tool {
 		Path tmpOutPath = createTmpOutDir(conf);
 		FileInputFormat.setInputPaths(job, inFiles);
 		FileOutputFormat.setOutputPath(job, tmpOutPath);
+		FileOutputFormat.setCompressOutput(job,false);
+		//FileOutputFormat.setOutputCompressorClass(job, codecClass);
 		int res = job.waitForCompletion(true) ? 0 : 1;
 		if (res == 0) {
 			moveDataFile(tmpOutPath, conf);
